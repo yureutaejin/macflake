@@ -1,24 +1,55 @@
 # Mac Flake
 
-## Project Layout
+Reproducible macOS, powered by Nix Flakes
 
-```text
-macflake/
-├── .gitignore
-├── PLAN.md
-├── README.md
-├── flake.nix
-├── flake.lock
-├── hosts/
-│   └── myMac/
-│       ├── default.nix
-│       └── identity.nix    # host, user, and Home Manager user values to customize
-└── result -> /nix/store/... # optional local symlink created by `nix build`
+```mermaid
+flowchart TB
+    subgraph nix["Nix-based Environment Management"]
+        direction TB
+        flakes["Nix Flakes<br/>Package Management"]
+        darwin["nix-darwin<br/>Nix modules for macOS"]
+        home["home-manager<br/>User Environment"]
+        brew["nix-homebrew<br/>Homebrew installation"]
+    end
+
+    subgraph git["Git"]
+        direction TB
+        flakeNix["flake.nix"]
+        flakeLock["flake.lock"]
+        modules["modules/*.nix"]
+        gitEtc["..."]
+    end
+
+    subgraph mac["MacOS (Apple Silicon)"]
+        direction TB
+        shell["Shell"]
+        binary["Binary"]
+        package["Package"]
+        config["Configuration"]
+    end
+
+    nix ~~~ mac
+
+    flakes ~~~ darwin
+    home ~~~ brew
+
+    git --> nix
+    nix --> mac
+
+    style mac fill:#1e293b,stroke:#3b82f6,color:#fff
+    style nix fill:#111820,stroke:#2563eb,color:#fff
+    style flakes fill:#303030,stroke:#555,color:#fff
+    style darwin fill:#303030,stroke:#555,color:#fff
+    style home fill:#303030,stroke:#555,color:#fff
+    style brew fill:#303030,stroke:#555,color:#fff
+    style git fill:#171717,stroke:#555,color:#fff
 ```
 
 ## Host and User Configuration
 
-Customize this Mac's host name, platform, account name, home directory, and Home Manager user settings in `modules/identity.nix`. Keep secrets out of the repository and Nix store.
+Each host is defined in `modules/hosts/<host>.nix` and registered in
+`modules/hosts/default.nix`. Customize its host name, platform, account name,
+and home directory there. Keep secrets out of the repository and Nix store.
 
 ## Quick Start
 
@@ -41,41 +72,35 @@ experimental-features = nix-command flakes
 $ nix config show | grep flake
 ```
 
-3. Check and build the configuration
+3. Add your host-specific configuration in `modules/hosts/<host>.nix` and register it in `modules/hosts/default.nix`.
+4. Check and build the configuration
 
 ```sh
 nix flake check
-nix build
+nix build .#macbook-pro
 ```
 
-4. Apply changes
+5. Apply changes to your Mac. Replace `<profile>` with the host key from
+   `modules/hosts/default.nix` when targeting another host.
 
 ```sh
-sudo darwin-rebuild switch --flake .#myMac
+sudo darwin-rebuild switch --flake .#<profile>
 ```
 
 If it is the first time applying changes, use the below
 
 ```sh
-sudo ./result/sw/bin/darwin-rebuild switch --flake .#myMac
+sudo ./result/sw/bin/darwin-rebuild switch --flake .#<profile>
 ```
 
-## Common Commands
+6. Show current system generation
+
+`/run/current-system` points to the active nix-darwin system generation.
+(It is a GC root and is not removed by `nix store gc`.)
 
 ```sh
-# Create missing lock file entries for this Flake.
-nix flake lock
-
-# Build this Mac configuration without applying changes.
-darwin-rebuild build --flake .#myMac
-
-# Show this configuration's active system generation.
 readlink /run/current-system
 ```
-
-`/run/current-system` points to the active nix-darwin system generation. It is a GC root and is not removed by `nix store gc`.
-
-For Nix profiles, generations, disk usage, dependency inspection, and garbage collection, see [Nix Debugging](docs/nix-debug.md).
 
 ## Cleanup
 
@@ -88,8 +113,9 @@ To remove the active Home Manager generation before garbage collection, without
 installing the Home Manager CLI globally:
 
 ```sh
+nix run home-manager/release-26.05 -- uninstall
+# or
 nix develop .#devTools --command home-manager uninstall
-nix store gc
 ```
 
 A later `darwin-rebuild switch` with this Flake activates Home Manager again.
@@ -102,11 +128,13 @@ sudo darwin-uninstaller
 sudo find /nix/var/nix/profiles -maxdepth 1 -type l -name 'system*' -print
 
 # After verifying they all belong to this retired setup: remove this project's first generation.
-sudo rm /nix/var/nix/profiles/system \
-  /nix/var/nix/profiles/system-1-link
-```
+sudo rm /nix/var/nix/profiles/system*
 
-After removing the project-specific profile links, use the garbage collection procedure in [Nix Debugging](docs/nix-debug.md#garbage-collection) to reclaim unreferenced store paths.
+# Run garbage collection to remove unreferenced store paths.
+nix store gc
+# Remove old generations also not referenced by any profile.
+nix-collect-garbage -d
+```
 
 [^install-nix]: [Nix installation guide](https://nixos.org/download.html). Used Nix 2.35.4 in this project.
 
