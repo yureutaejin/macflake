@@ -1,110 +1,138 @@
 # Nix Debugging
 
-This page covers general Nix inspection and cleanup commands. It is not specific to this macflake repository.
+These are compact debugging patterns usable with any Nix Flake. Project-
+specific selectors, paths, and expected values are marked **This project**.
+For options not listed here, use the official Nix, nix-darwin, or Home Manager
+manual.
 
 ## Inspect Flake Outputs
 
-`nix flake show <flake-reference>` evaluates a flake and prints the attributes it exposes through `outputs`. It is an output-discovery command: use it to find names and paths such as `packages.aarch64-darwin.default`, `checks.<system>`, or a project-specific `darwinConfigurations.myMac` before referring to them from another command.
-
-It does **not** build an output or activate a nix-darwin configuration. Evaluation can still fail when an output contains an invalid Nix expression, so it is also useful as a quick structural check.
-
 ```sh
-# Inspect this repository's outputs. `path:.` makes the local flake explicit.
-nix flake show path:.
-
-# Inspect outputs published by the nix-darwin 26.05 branch.
-nix flake show github:nix-darwin/nix-darwin/nix-darwin-26.05
-
-# Include output trees for systems other than the current machine.
-nix flake show --all-systems github:nix-darwin/nix-darwin/nix-darwin-26.05
-
-# Machine-readable representation, useful with jq or a script.
-nix flake show --json path:.
+nix flake show <flake-reference>
 ```
 
-The remote reference has the form `github:<owner>/<repository>/<revision>`. Therefore the nix-darwin reference is `github:nix-darwin/nix-darwin/nix-darwin-26.05` (not `github:nix=darwin/...`).
+Use this when a Flake selector is unclear. `<flake-reference>` may be `path:.`
+for the current repository, a local path, or a remote reference such as
+`github:owner/repository`.
 
-## Profiles and Generations
+**This project:**
 
-A profile is a named set of top-level Nix packages. A generation is an immutable revision of that profile: every update creates a new generation, allowing rollback. The `profile` or `system` link points to the active generation; `*-N-link` entries are older generations.
+```sh
+nix flake show path:.
+```
+
+Expected useful outputs:
 
 ```text
-/nix/var/nix/profiles/per-user/root/profile
-  -> profile-3-link                 # active Nix root profile
-
-/nix/var/nix/profiles/system
-  -> system-2-link                  # active nix-darwin system, when installed
+darwinConfigurations.macbook-pro
+packages.aarch64-darwin.macbook-pro
+devShells.aarch64-darwin.devTools
 ```
 
-List user and system profiles:
+`darwinConfigurations` may display as `unknown`. That is expected: it is a
+configuration attribute set, not a buildable derivation.
+
+## Find a Package
+
+Use one of the following to find the attribute to declare as
+`pkgs.<attribute>`:
+
+- `nix search nixpkgs <package-name>`
+- `nix search github:NixOS/nixpkgs/<version-branch> <package-name>`
+- <https://search.nixos.org/packages>
+
+## Evaluate and Build
+
+Check a Flake without activating it:
 
 ```sh
-find /nix/var/nix/profiles/per-user \
-  -mindepth 2 -maxdepth 2 -type l -name profile -print
-find /nix/var/nix/profiles \
-  -maxdepth 1 -type l -name 'system*' -print
+nix flake check <flake-reference>
 ```
 
-Choose one profile or active system to inspect:
+Build one explicit output without activating it:
 
 ```sh
-TARGET=/nix/var/nix/profiles/per-user/root/profile
-# TARGET=/run/current-system
+nix build <flake-reference>#<output>
 ```
 
-## Inspect a Profile
+**This project:** after changing `.nix` files, run:
 
 ```sh
-# Top-level packages directly registered in a normal Nix profile.
-sudo nix-env --query --installed --profile "$TARGET"
-
-# Total closure size of the selected target.
-nix path-info --closure-size --human-readable "$TARGET"
-
-# Individual store paths in the closure, sorted by size.
-nix path-info --recursive --size --human-readable "$TARGET" | sort -h -k2
-
-# Dependency tree of the selected target.
-nix-store -q --tree "$TARGET" | less
-
-# GC roots that retain a specific store path.
-nix-store -q --roots /nix/store/<store-path>
-
-# Why the selected target depends on a specific store path.
-nix why-depends "$TARGET" /nix/store/<store-path>
+nix flake check
+nix build .#macbook-pro
+sudo darwin-rebuild switch --flake .#macbook-pro
 ```
 
-For a nix-darwin system generation, the Flake configuration is the source of truth for intentionally declared packages. Profile queries are most useful for normal Nix user/root profiles.
+New files must be tracked by Git before a Git-based Flake can read them.
+
+## Profiles, Generations, and GC Roots
+
+A **profile** is a named collection of store paths. Updating it creates an
+immutable **generation**, which permits rollback. A **GC root** is a symlink
+or registration that keeps a store path and its dependencies from garbage
+collection.
+
+**This project:** important roots are:
+
+| Path                                               | Meaning                              | Expected target                                     |
+| -------------------------------------------------- | ------------------------------------ | --------------------------------------------------- |
+| `/run/current-system`                              | Active nix-darwin system generation  | `/nix/store/...-darwin-system-...`                  |
+| `/etc/profiles/per-user/$USER`                     | Home Manager user package profile    | `/nix/store/...-user-environment` or a profile path |
+| `~/.local/state/home-manager/gcroots/current-home` | Active Home Manager generation       | `/nix/store/...-home-manager-generation`            |
+| `result`                                           | Most recent local `nix build` output | `/nix/store/...`                                    |
+
+Old paths are not retained merely because they are old. They remain while a
+current system, profile, Home Manager generation, or local `result` still
+references them.
 
 ## Garbage Collection
 
+Preview garbage collection before deleting anything:
+
 ```sh
-# Remove an unneeded local build-result link; this does not delete its store output immediately.
-rm -f result
-
-# Preview and remove store paths that no active system, profile, or result link uses.
 nix store gc --dry-run
-nix store gc
-
-# Choose one policy while continuing to use Nix:
-# Delete all old rollback generations, then garbage-collect.
-sudo nix-collect-garbage -d
-
-# Or keep rollback generations from the last 30 days.
-sudo nix-collect-garbage --delete-older-than 30d
 ```
 
-### Remove Home Manager State
-
-Home Manager's active generation is a GC root, so normal garbage collection
-does not remove it. If you intentionally want to stop using Home Manager,
-remove its active state first, then run GC:
+`0 store paths would be deleted` means every current path is protected by a
+root; it does not mean cleanup failed. When the preview is acceptable:
 
 ```sh
-# `home-manager` is available only in this repository's development shell.
+nix store gc
+```
+
+Remove old rollback generations only when they are no longer needed:
+
+```sh
+sudo nix-collect-garbage -d
+```
+
+**This project:** if Home Manager itself is intentionally being removed, first
+remove its active generation, then run GC:
+
+```sh
 nix develop .#devTools --command home-manager uninstall
 nix store gc
 ```
 
-This does not remove the Home Manager declaration from this Flake. A later
-`darwin-rebuild switch` using this configuration activates Home Manager again.
+A later `darwin-rebuild switch --flake .#macbook-pro` recreates Home Manager,
+because this Flake still declares it.
+
+## Investigate Unexpected Disk Usage
+
+When GC cannot delete anything but a retained closure is unexpectedly large,
+measure the root and trace the dependency:
+
+```sh
+nix path-info --closure-size --human-readable <root>
+nix why-depends <root> /nix/store/<store-path>
+```
+
+**This project:** the active Home Manager root is:
+
+```text
+~/.local/state/home-manager/gcroots/current-home
+```
+
+For example, `nix why-depends` can reveal which declared package pulled in a
+large runtime dependency. Do not remove an active GC root to reclaim space;
+remove the owning declaration, apply a new generation, then run GC.
