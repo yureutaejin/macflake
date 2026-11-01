@@ -13,28 +13,39 @@
 
   };
 
-  outputs = { self, nixpkgs, nix-darwin, home-manager, ... }:
+  outputs = { nixpkgs, nix-darwin, home-manager, ... }:
   let
-    host = import ./modules/identity.nix;
-    pkgs = import nixpkgs { system = host.platform; };
-  in {
-    darwinConfigurations.${host.name} = nix-darwin.lib.darwinSystem {
-      specialArgs = { inherit host; };
+    system = "aarch64-darwin";
+    pkgs = import nixpkgs { inherit system; };
+    hosts = import ./modules/hosts;
 
-      modules = [
-        home-manager.darwinModules.home-manager
-        ./modules/default.nix
-        ./modules/home.nix
-      ];
-    };
-    packages.${host.platform}.default = self.darwinConfigurations.${host.name}.system;
+    mkDarwin = host:
+      nix-darwin.lib.darwinSystem {
+        specialArgs = { inherit host; };
+
+        modules = [
+          home-manager.darwinModules.home-manager
+          ./modules/default.nix
+          ./modules/home.nix
+        ];
+      };
+
+    darwinConfigurations = builtins.mapAttrs (_: host: mkDarwin host) hosts;
+  in {
+    inherit darwinConfigurations;
+
+    # Host-specific system outputs. Build one explicitly
+    # e.g. `nix build .#macbook-pro`
+    packages.${system} = builtins.mapAttrs (_: configuration: configuration.system)
+      darwinConfigurations;
 
     # Development-only tools; they are not included in the macOS system output.
     # Enter devShell: `nix develop .#devTools`
-    # Build only: `nix build .#devShells.${host.platform}.devTools`
-    devShells.${host.platform}.devTools = pkgs.mkShell {
+    # Run commands within devShell: `nix develop .#devTools --command <command>`
+    # Build only: `nix build .#devShells.${system}.devTools`
+    devShells.${system}.devTools = pkgs.mkShell {
       packages = [
-        home-manager.packages.${host.platform}.default
+        home-manager.packages.${system}.default
       ];
     };
   };
