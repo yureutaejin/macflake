@@ -45,11 +45,15 @@ flowchart TB
     style git fill:#171717,stroke:#555,color:#fff
 ```
 
-## Host and User Configuration
+## Configure Your Environment
 
-Each host is defined in `modules/hosts/<host>.nix` and registered in
-`modules/hosts/default.nix`. Customize its host name, platform, account name,
-and home directory there. Keep secrets out of the repository and Nix store.
+> [!IMPORTANT]
+> Before starting, configure `modules/hosts/` for your own Mac.
+> See step 3 in the Quick Start section.
+
+See [Modules configuration](modules/README.md) for the host registry, package,
+shell, and dotfile configuration structure. Keep secrets out of the repository
+and Nix store.
 
 ## Quick Start
 
@@ -105,40 +109,6 @@ sudo ./result/sw/bin/darwin-rebuild switch --flake .#<profile>
 ```sh
 readlink /run/current-system
 ```
-
-## Configure Mac Flake
-
-The `modules/` directory separates host identity, system configuration, user
-packages, shell setup, and managed configuration files.
-
-```text
-modules/
-├── hosts/       # registered Mac hosts and their identity values
-├── configs/     # files linked into the user's home directory
-├── pkgs/        # definitions for externally fetched binaries
-├── shell/       # shell integration and shell configuration
-├── default.nix  # shared nix-darwin system settings
-└── home.nix     # Home Manager user configuration and package selection
-```
-
-Before applying a host, review and update the following as needed:
-
-- **Host identity:** Add or update `modules/hosts/<host>.nix`, then register
-  its key in `modules/hosts/default.nix`. Confirm the macOS hostname,
-  platform, user name, and home directory.
-- **System settings:** Update `modules/default.nix` for shared nix-darwin
-  settings such as the hostname policy or Nix options.
-- **User packages:** Update `home.packages` and the external-binary filename
-  list in `modules/home.nix`. For a GitHub-release binary, add its URL,
-  version, platform source, and hash under `modules/pkgs/`.
-- **Shell:** Update `modules/shell/zshrc` for the complete managed `.zshrc`.
-  `modules/shell/zsh.nix` links it into the user's home directory.
-- **Configuration files:** Add a source file under `modules/configs/` and map
-  its destination path in `modules/configs/config.nix`; Home Manager then
-  links it into the user's home directory.
-
-After editing, run `nix flake check` and build the intended host before
-switching it.
 
 ## Cleanup
 
