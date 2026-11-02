@@ -1,0 +1,53 @@
+# PATH Variable
+export PATH="/opt/homebrew/bin:$PATH"
+export PATH="/opt/homebrew/sbin:$PATH"
+
+export PATH="/opt/bin:$PATH"
+export PATH="$HOME/bin:$HOME/.local/bin:/usr/local/bin:$PATH"
+
+# Key bind
+
+#bindkey "^[[1;3D" backward-word
+#bindkey "^[[1;3C" forward-word
+bindkey "[D" backward-word
+bindkey "[C" forward-word
+bindkey "^[a" beginning-of-line
+bindkey "^[e" end-of-line
+
+# Path to your oh-my-zsh installation.
+
+export ZSH="/Users/jinyuntae/.oh-my-zsh"
+
+plugins=(git zsh-syntax-highlighting zsh-completions zsh-autosuggestions)
+source $ZSH/oh-my-zsh.sh
+
+# starship/starship zsh integration
+eval "$(starship init zsh)"
+
+# K8s Setting
+
+source <(kubectl completion zsh)
+alias k=kubectl
+compdef _kubectl k
+
+# golang
+GO_VERSION=1.25.6
+export PATH="$PATH:/usr/local/go/go${GO_VERSION}/bin"
+
+# NVM Setting
+
+export NVM_DIR="$HOME/.nvm"
+  [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && . "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
+  [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && . "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
+
+# Shell init
+neofetch
+
+## ssh-agent
+echo "Manually activate ssh-agent"
+ssh-add ~/.ssh/ytjin_ssot --apple-use-keychain && \
+  echo "SSH_AUTH_SOCK = $SSH_AUTH_SOCK"
+
+## cmux command
+cmux welcome
+
