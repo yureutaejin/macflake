@@ -144,4 +144,10 @@ nix store gc
 nix-collect-garbage -d
 ```
 
+## (Optional) Extensions
+
+### VS Code Extension
+
+- `jnoortheen.nix-ide`
+
 [^nix-version]: Used Nix 2.35.4 in this project.
