@@ -81,6 +81,18 @@ collection.
 | `~/.local/state/home-manager/gcroots/current-home` | Active Home Manager generation       | `/nix/store/...-home-manager-generation`            |
 | `result`                                           | Most recent local `nix build` output | `/nix/store/...`                                    |
 
+On macOS, `/etc/profiles/per-user/$USER` may be a symlink to its static
+profile:
+
+```sh
+# Show the profile symlink target.
+readlink /etc/profiles/per-user/$USER
+
+# -L: Follow every symlink encountered during the search.
+# -H: Follow only the starting profile symlink.
+find -H /etc/profiles/per-user/$USER -name nmap
+```
+
 Old paths are not retained merely because they are old. They remain while a
 current system, profile, Home Manager generation, or local `result` still
 references them.

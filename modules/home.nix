@@ -27,6 +27,7 @@
           # - `nix search nixpkgs <package-name>`
           # - `nix search github:NixOS/nixpkgs/<version-branch> <package-name>`
           # - https://search.nixos.org/packages
+          pkgs.nmap
           pkgs.ripgrep
           pkgs.vim
           pkgs.yq
