@@ -88,6 +88,18 @@ nix flake check
 nix build .#macbook-pro
 ```
 
+These commands use the Git-based Flake reference for this repository, which
+includes only Git-tracked files. Track newly added Nix files before running
+them. While deliberately testing untracked local files, use `path:.` instead:
+
+```sh
+nix flake check path:.
+nix build path:.#macbook-pro
+```
+
+See [Nix debugging](docs/nix-debug.md) for the distinction between local-path
+and Git-based Flake references.
+
 5. Apply changes to your Mac. Replace `<profile>` with the host key from
    `modules/hosts/default.nix` when targeting another host.
 

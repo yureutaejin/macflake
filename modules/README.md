@@ -26,7 +26,7 @@ home directory.
 modules/
 ├── hosts/       # registered Mac hosts and their identity values
 ├── configs/     # files linked into the user's home directory
-├── pkgs/        # definitions for externally fetched binaries
+├── pkgs/        # external release-binary and Flake package definitions
 ├── shell/       # shell integration and shell configuration
 ├── default.nix  # shared nix-darwin system settings
 └── home.nix     # Home Manager user configuration and package selection
@@ -55,10 +55,11 @@ sudo darwin-rebuild switch --flake .#macbook-pro
 
 - **System settings:** Update `default.nix` for shared nix-darwin settings,
   such as Nix options and hostname configuration.
-- **User packages:** Update `home.packages` and the external-binary filename
-  list in `home.nix`. For a GitHub-release binary, define its URL, version,
-  platform source, and hash under `pkgs/`. See [External Binary
-  Packages](pkgs/README.md).
+- **User packages:** Update `home.packages` and the package lists in
+  `home.nix`. For a GitHub-release binary, define its URL, version, platform
+  source, and hash under `pkgs/github/`. For a package from another Flake,
+  add its locked input in `flake.nix` and select its output under
+  `pkgs/flakes/`. See [External Binary Packages](pkgs/README.md).
 - **Shell:** Update `shell/zshrc` for the complete managed `.zshrc`.
   `shell/zsh.nix` links it into the user's home directory.
 - **Configuration files:** Add a source file under `configs/` and map its
@@ -66,4 +67,6 @@ sudo darwin-rebuild switch --flake .#macbook-pro
   user's home directory.
 
 After editing, run `nix flake check` and build the intended host before
-switching it.
+switching it. New files must be tracked before those Git-based Flake commands
+can read them; see [Nix debugging](../docs/nix-debug.md) for local `path:.`
+validation.

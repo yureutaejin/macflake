@@ -1,18 +1,17 @@
-{ host, ... }:
+{ host, inputs, ... }:
 {
   users.users.${host.user.name}.home = host.user.home;
 
   home-manager = {
     useGlobalPkgs = true;
     useUserPackages = true;
+    extraSpecialArgs = { inherit inputs; };
     users.${host.user.name} =
-      { pkgs, ... }:
+      { pkgs, inputs, ... }:
       let
-        fetchBinary = import ../tools/fetch-binary.nix { inherit pkgs; };
-        binaryPackages = map (name: fetchBinary (import (./pkgs + "/${name}.nix"))) [
-          # Files in ./pkgs, without the .nix extension.
-          "starship"
-        ];
+        nixpkgsPackages = import ./pkgs/nixpkgs { inherit pkgs; };
+        githubPackages = import ./pkgs/github { inherit pkgs; };
+        flakePackages = import ./pkgs/flakes { inherit pkgs inputs; };
       in
       {
         imports = [
@@ -22,23 +21,7 @@
 
         home.stateVersion = "26.05";
 
-        home.packages = [
-          # Search package:
-          # - `nix search nixpkgs <package-name>`
-          # - `nix search github:NixOS/nixpkgs/<version-branch> <package-name>`
-          # - https://search.nixos.org/packages
-
-          # Nix language tools
-          pkgs.nixd
-          pkgs.nixfmt
-          # User tools
-          pkgs.nmap
-          pkgs.ripgrep
-          pkgs.vim
-          pkgs.yq
-
-        ]
-        ++ binaryPackages;
+        home.packages = nixpkgsPackages ++ githubPackages ++ flakePackages;
       };
   };
 }
