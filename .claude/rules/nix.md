@@ -19,8 +19,16 @@ paths:
   Home Manager user configuration. Imports must use the correct module scope.
 - Keep development-only tools in `devShells`; do not add them to the deployed
   system or user package lists unless requested.
-- Prefer suitable nixpkgs packages. External binary files under
-  `modules/pkgs/` return data attribute sets consumed by `tools/fetch-binary.nix`.
+- Prefer suitable nixpkgs packages. Keep the Home Manager package lists grouped
+  by source: nixpkgs selections in `modules/pkgs/nixpkgs/default.nix`, GitHub
+  release-binary definitions in `modules/pkgs/github/<name>.nix` and their
+  installed list in `modules/pkgs/github/default.nix`, and external Flake
+  package outputs in `modules/pkgs/flakes/default.nix`.
+- Declare an external Flake source as a named, literal entry under the root
+  `flake.nix` `inputs`; do not try to construct that attribute set with an
+  imported file. Select the required output in `modules/pkgs/flakes/default.nix`
+  instead of adding a `pkgs.*` overlay unless it must be reused outside the
+  Home Manager package list.
 - Pin external binaries by version, release URL, platform, and verified hash.
   The hash covers the downloaded asset; `binary` is its unpacked executable
   path. Confirm the archive layout and helper support before adding a format.

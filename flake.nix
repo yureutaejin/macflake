@@ -11,8 +11,7 @@
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
-    # For package which has flake.nix
-    # See //modules/pkgs/flakes/default.nix
+    # External Flake package; selected in //modules/pkgs/flakes/default.nix.
     mole = {
       url = "github:tw93/Mole/V1.71.0";
       inputs.nixpkgs.follows = "nixpkgs";

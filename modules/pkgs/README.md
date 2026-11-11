@@ -1,4 +1,4 @@
-# External Binary Packages
+# Package Sources
 
 This directory groups the packages installed for the user by their source.
 Prefer a suitable nixpkgs package before defining a release binary or adding
@@ -27,16 +27,10 @@ There are three package paths in this project:
   `tools/fetch-binary.nix` downloads the pinned release asset, verifies its
   hash, and turns it into an installed package.
 - **External Flake packages:** Declare the source Flake under `inputs` in the
-  root `flake.nix`, then select its package output in `flakes/default.nix`.
-  `modules/home.nix` imports that file and adds its returned package list to
-  `home.packages`.
-
-Packages supplied by another Flake live in `flakes/`. Their source and version
-are declared under `inputs` in the root `flake.nix`, so `flake.lock` can pin
-them. `flakes/default.nix` selects the appropriate outputs and returns the
-packages installed by Home Manager. For example, it returns Mole's default
-package for the current host platform. This project deliberately does not add
-these packages as `pkgs.*` overlays.
+  root `flake.nix`, so `flake.lock` can pin it. Select its package output in
+  `flakes/default.nix`; `modules/home.nix` adds the returned package list to
+  `home.packages`. This project deliberately does not add these packages as
+  `pkgs.*` overlays.
 
 Each `github/<name>.nix` file is data only: it returns an attribute set that
 describes one GitHub release binary. `tools/fetch-binary.nix` turns that data
