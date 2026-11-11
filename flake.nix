@@ -13,40 +13,49 @@
 
   };
 
-  outputs = { nixpkgs, nix-darwin, home-manager, ... }:
-  let
-    system = "aarch64-darwin";
-    pkgs = import nixpkgs { inherit system; };
-    hosts = import ./modules/hosts;
+  outputs =
+    {
+      nixpkgs,
+      nix-darwin,
+      home-manager,
+      ...
+    }:
+    let
+      system = "aarch64-darwin";
+      pkgs = import nixpkgs { inherit system; };
+      hosts = import ./modules/hosts;
 
-    mkDarwin = host:
-      nix-darwin.lib.darwinSystem {
-        specialArgs = { inherit host; };
+      mkDarwin =
+        host:
+        nix-darwin.lib.darwinSystem {
+          specialArgs = { inherit host; };
 
-        modules = [
-          home-manager.darwinModules.home-manager
-          ./modules/default.nix
-          ./modules/home.nix
+          modules = [
+            home-manager.darwinModules.home-manager
+            ./modules/default.nix
+            ./modules/home.nix
+          ];
+        };
+
+      darwinConfigurations = builtins.mapAttrs (_: host: mkDarwin host) hosts;
+    in
+    {
+      inherit darwinConfigurations;
+
+      # Host-specific system outputs. Build one explicitly
+      # e.g. `nix build .#macbook-pro`
+      packages.${system} = builtins.mapAttrs (
+        _: configuration: configuration.system
+      ) darwinConfigurations;
+
+      # Development-only tools; they are not included in the macOS system output.
+      # Enter devShell: `nix develop .#devTools`
+      # Run commands within devShell: `nix develop .#devTools --command <command>`
+      # Build only: `nix build .#devShells.${system}.devTools`
+      devShells.${system}.devTools = pkgs.mkShell {
+        packages = [
+          home-manager.packages.${system}.default
         ];
       };
-
-    darwinConfigurations = builtins.mapAttrs (_: host: mkDarwin host) hosts;
-  in {
-    inherit darwinConfigurations;
-
-    # Host-specific system outputs. Build one explicitly
-    # e.g. `nix build .#macbook-pro`
-    packages.${system} = builtins.mapAttrs (_: configuration: configuration.system)
-      darwinConfigurations;
-
-    # Development-only tools; they are not included in the macOS system output.
-    # Enter devShell: `nix develop .#devTools`
-    # Run commands within devShell: `nix develop .#devTools --command <command>`
-    # Build only: `nix build .#devShells.${system}.devTools`
-    devShells.${system}.devTools = pkgs.mkShell {
-      packages = [
-        home-manager.packages.${system}.default
-      ];
     };
-  };
 }
