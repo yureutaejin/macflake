@@ -55,6 +55,17 @@ Build one explicit output without activating it:
 nix build <flake-reference>#<output>
 ```
 
+When a repository is evaluated through its Git-based reference (for example,
+`.` or `.#<output>`), Nix includes only files tracked by Git. After adding a
+new Nix file, track it before using those references. To intentionally test
+the full local working tree before tracking a new file, use the explicit local
+path reference instead:
+
+```sh
+nix flake check path:.
+nix build path:.#<output>
+```
+
 **This project:** after changing `.nix` files, run:
 
 ```sh
@@ -63,7 +74,9 @@ nix build .#macbook-pro
 sudo darwin-rebuild switch --flake .#macbook-pro
 ```
 
-New files must be tracked by Git before a Git-based Flake can read them.
+For untracked local changes, replace `.` with `path:.` in the check and build
+commands above. Do not use `path:.` as a substitute for tracking files before
+committing or sharing the configuration.
 
 ## Profiles, Generations, and GC Roots
 

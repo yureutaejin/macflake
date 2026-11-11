@@ -11,27 +11,28 @@
     home-manager.url = "github:nix-community/home-manager/release-26.05";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
 
+    # For package which has flake.nix
+    # See //modules/pkgs/flakes/default.nix
+    mole = {
+      url = "github:tw93/Mole/V1.71.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    {
-      nixpkgs,
-      nix-darwin,
-      home-manager,
-      ...
-    }:
+    inputs:
     let
       system = "aarch64-darwin";
-      pkgs = import nixpkgs { inherit system; };
+      pkgs = import inputs.nixpkgs { inherit system; };
       hosts = import ./modules/hosts;
 
       mkDarwin =
         host:
-        nix-darwin.lib.darwinSystem {
-          specialArgs = { inherit host; };
+        inputs.nix-darwin.lib.darwinSystem {
+          specialArgs = { inherit host inputs; };
 
           modules = [
-            home-manager.darwinModules.home-manager
+            inputs.home-manager.darwinModules.home-manager
             ./modules/default.nix
             ./modules/home.nix
           ];
@@ -54,7 +55,7 @@
       # Build only: `nix build .#devShells.${system}.devTools`
       devShells.${system}.devTools = pkgs.mkShell {
         packages = [
-          home-manager.packages.${system}.default
+          inputs.home-manager.packages.${system}.default
         ];
       };
     };

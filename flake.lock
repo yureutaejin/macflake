@@ -21,6 +21,27 @@
         "type": "github"
       }
     },
+    "mole": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1794318673,
+        "narHash": "sha256-7NM5DE9GPjZJatBT9h68mnF9pq5gaEJLDFB3xXbhtqw=",
+        "owner": "tw93",
+        "repo": "Mole",
+        "rev": "49a861b85d1bc19fa96e4dc4a8e8a7b43000193f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "tw93",
+        "ref": "V1.71.0",
+        "repo": "Mole",
+        "type": "github"
+      }
+    },
     "nix-darwin": {
       "inputs": {
         "nixpkgs": [
@@ -61,6 +82,7 @@
     "root": {
       "inputs": {
         "home-manager": "home-manager",
+        "mole": "mole",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs"
       }
