@@ -26,5 +26,13 @@ Read documentation relevant to the task before making changes:
 Keep directory-specific documentation alongside its code rather than
 maintaining an exhaustive list of README paths here.
 
-Shared workflow rules are in `.claude/rules/workflow.md`. Nix and documentation
-rules in that directory are scoped to their respective file paths.
+## Agent Configuration
+
+This project's `.claude/` directory is the authoritative location for
+project-specific agent configuration. Keep project rules in `.claude/rules/`
+and project skills in `.claude/skills/`; do not add project guidance to global
+agent configuration directories.
+
+Read `.claude/rules/workflow.md` for every task. Nix and documentation rules
+in that directory are scoped to their respective file paths. Use a relevant
+project skill from `.claude/skills/` when its description matches the task.
